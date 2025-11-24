@@ -1,0 +1,50 @@
+[
+    {
+        "tanggal": "2025-11-23",
+        "umur": 10,
+        "tinggi": 13.0,
+        "suhu": 11.0,
+        "lembap": 1.0,
+        "daun": "hijau"
+    },
+    {
+        "tanggal": "2025-11-23",
+        "umur": 12,
+        "tinggi": 23.0,
+        "suhu": 24.0,
+        "lembap": 9.0,
+        "daun": "hijau"
+    },
+    {
+        "tanggal": "2025-11-24",
+        "umur": 12,
+        "tinggi": 12.0,
+        "suhu": 12.0,
+        "lembap": 12.0,
+        "daun": "rusak"
+    },
+    {
+        "tanggal": "2025-11-23",
+        "umur": 13,
+        "tinggi": 10.0,
+        "suhu": 10.0,
+        "lembap": 10.0,
+        "daun": "kering"
+    },
+    {
+        "tanggal": "2025-11-23",
+        "umur": 14,
+        "tinggi": 12.0,
+        "suhu": 1.0,
+        "lembap": 1.0,
+        "daun": "rusak"
+    },
+    {
+        "tanggal": "2025-11-24",
+        "umur": 90,
+        "tinggi": 100.0,
+        "suhu": 100.0,
+        "lembap": 1290.0,
+        "daun": "80"
+    }
+]

@@ -3,10 +3,11 @@ from datetime import datetime
 from tabulate import tabulate
 
 DATA_FILE = "jagung_ketan.json"
+# ADMIN_PATH = "../json/admin.json"
+# SPESIFIKASI_PATH = "../json/spesifikasi.json"
 
-# =====================
-# Database
-# =====================
+
+# code untuk penyimpanan ke database
 def load_data():
     try:
         with open(DATA_FILE, "r") as file:
@@ -18,53 +19,121 @@ def save_data(data):
     with open(DATA_FILE, "w") as file:
         json.dump(data, file, indent=4)
 
-# =====================
-# Standar pertumbuhan jagung ketan
-# =====================
-STANDAR_TINGGI = {
-    7: (10, 15),
-    14: (25, 35),
-    21: (40, 60),
-    30: (70, 100),
-    45: (120, 160),
-    60: (180, 220),
+
+# standar per minggu (1-14) berdasarkan data pertumbuhan
+STANDAR_MINGGU = {
+    1:  {"umur_days": (0, 7),   "tinggi_cm": (5, 10),    "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (0, 1)},
+    2:  {"umur_days": (8, 14),  "tinggi_cm": (20, 30),   "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (4, 6)},
+    3:  {"umur_days": (15, 21), "tinggi_cm": (45, 55),   "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (6, 8)},
+    4:  {"umur_days": (22, 28), "tinggi_cm": (70, 80),   "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (7, 9)},
+    5:  {"umur_days": (29, 35), "tinggi_cm": (95, 105),  "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (8, 10)},
+    6:  {"umur_days": (36, 42), "tinggi_cm": (140, 160), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (10, 11)},
+    7:  {"umur_days": (43, 49), "tinggi_cm": (160, 180), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 12)},
+    8:  {"umur_days": (50, 56), "tinggi_cm": (185, 195), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 13)},
+    9:  {"umur_days": (57, 63), "tinggi_cm": (195, 205), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 13)},
+    10: {"umur_days": (64, 70), "tinggi_cm": (195, 205), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 13)},
+    11: {"umur_days": (71, 77), "tinggi_cm": (195, 205), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 13)},
+    12: {"umur_days": (78, 84), "tinggi_cm": (180, 200), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (11, 13), "status": "mengering"},
+    13: {"umur_days": (85, 91), "tinggi_cm": (160, 190), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (0, 12),  "status": "mengering"},
+    14: {"umur_days": (92, 98), "tinggi_cm": (150, 190), "suhu_C": (23, 27), "lembap_pct": (75, 85), "daun": (0, 12),  "status": "panen"},
 }
 
-def analisis_tinggi(umur, tinggi):
-    if umur not in STANDAR_TINGGI:
+def _find_week_by_day(umur_hari):
+    for minggu, data in STANDAR_MINGGU.items():
+        low, high = data["umur_days"]
+        if low <= umur_hari <= high:
+            return minggu, data
+    return None, None
+
+def analisis_tinggi(umur_hari, tinggi_cm):
+    minggu, standar = _find_week_by_day(umur_hari)
+    if not standar:
         return "Belum ada data standar untuk umur ini."
-    
-    batas_bawah, batas_atas = STANDAR_TINGGI[umur]
+    low, high = standar["tinggi_cm"]
+    if tinggi_cm < low:
+        return f"Terlalu pendek. Ideal minggu {minggu}: {low}-{high} cm."
+    if tinggi_cm > high:
+        return f"Lebih tinggi dari rata-rata. Ideal minggu {minggu}: {low}-{high} cm."
+    return f"Normal (Minggu {minggu}, Ideal: {low}-{high} cm)."
 
-    if tinggi < batas_bawah:
-        return f"Terlalu pendek. Ideal: {batas_bawah}-{batas_atas} cm."
-    elif tinggi > batas_atas:
-        return f"Lebih tinggi dari rata-rata. Ideal: {batas_bawah}-{batas_atas} cm."
-    else:
-        return f"Normal (Ideal: {batas_bawah}-{batas_atas} cm)."
+def analisis_suhu(umur_hari, suhu_C):
+    minggu, standar = _find_week_by_day(umur_hari)
+    if not standar:
+        return "Belum ada data standar suhu untuk umur ini."
+    low, high = standar["suhu_C"]
+    if suhu_C < low:
+        return f"Terlalu dingin untuk minggu {minggu} (ideal {low}–{high}°C)."
+    if suhu_C > high:
+        return f"Terlalu panas untuk minggu {minggu} (ideal {low}–{high}°C)."
+    return f"Suhu ideal untuk minggu {minggu} ({low}–{high}°C)."
 
-def analisis_suhu(suhu):
-    if suhu < 24:
-        return "Terlalu dingin (ideal 24–30°C)."
-    elif suhu > 30:
-        return "Terlalu panas (ideal 24–30°C)."
-    return "Suhu ideal."
+def analisis_lembap(umur_hari, lembap_pct):
+    minggu, standar = _find_week_by_day(umur_hari)
+    if not standar:
+        return "Belum ada data standar kelembapan untuk umur ini."
+    low, high = standar["lembap_pct"]
+    if lembap_pct < low:
+        return f"Kekurangan air untuk minggu {minggu} (ideal ~{low}–{high}%)."
+    if lembap_pct > high:
+        return f"Terlalu basah untuk minggu {minggu} (ideal ~{low}–{high}%)."
+    return f"Kelembapan ideal untuk minggu {minggu} (sekitar {low}–{high}%)."
 
-def analisis_lembap(lembap):
-    if lembap < 60:
-        return "Kekurangan air (ideal 60–80%)."
-    elif lembap > 80:
-        return "Terlalu basah (ideal 60–80%)."
-    return "Kelembapan ideal."
+def analisis_daun(umur_hari, daun):
+    minggu, standar = _find_week_by_day(umur_hari)
+    if not standar:
+        return "Belum ada data standar daun untuk umur ini."
 
-def analisis_daun(daun):
-    if daun.lower() == "hijau":
-        return "Daun sehat."
-    return "Daun tidak sehat — mungkin ada penyakit atau kekurangan nutrisi."
+    expected_low, expected_high = standar["daun"]
+    status = standar.get("status", "")
+    desc = str(daun).lower()
 
-# =====================
-# CRUD
-# =====================
+    # jika user tulis angka, misal "5"
+    daun_num = None
+    if desc.replace('.', '', 1).isdigit():
+        daun_num = float(desc)
+
+    if daun_num is not None:
+        if daun_num < expected_low:
+            return f"Jumlah daun ({daun_num}) lebih sedikit dari yang diharapkan minggu {minggu} (ideal ~{expected_low}-{expected_high} helai)."
+        if daun_num > expected_high:
+            return f"Jumlah daun ({daun_num}) lebih banyak dari tipikal minggu {minggu} (ideal ~{expected_low}-{expected_high} helai)."
+        if status in ("mengering", "panen"):
+            return f"Jumlah daun {daun_num} helai; pada minggu {minggu} tanaman memasuki fase '{status}' (daun mungkin mengering)."
+        return f"Jumlah daun normal untuk minggu {minggu} (sekitar {expected_low}-{expected_high} helai)."
+
+    # jika deskriptif
+    if "hijau" in desc:
+        return f"Daun hijau — tanda sehat untuk minggu {minggu} (ideal ~{expected_low}-{expected_high} helai)."
+    if "kering" in desc:
+        if status in ("mengering", "panen"):
+            return f"Daun kering — sesuai fase '{status}' (mendekati panen) di minggu {minggu}."
+        return f"Daun kering — bisa jadi stres air/nutrisi pada minggu {minggu}."
+    if "rusak" in desc:
+        return f"Daun rusak — kemungkinan gangguan hama/penyakit pada minggu {minggu}."
+
+    return f"Kondisi daun '{daun}' dicatat. Rentang daun tipikal minggu {minggu}: ~{expected_low}-{expected_high} helai."
+
+# mengembalikan ringkasan analisis dari dict berdasarkan input yang diberikan.
+def analisis_keseluruhan(umur_hari, tinggi_cm=None, suhu_C=None, lembap_pct=None, daun=None):
+    minggu, standar = _find_week_by_day(umur_hari)
+    if not standar:
+        return {"error": "Belum ada data standar untuk umur ini."}
+    hasil = {
+        "minggu": minggu,
+        "standar": standar
+    }
+    if tinggi_cm is not None:
+        hasil["tinggi"] = analisis_tinggi(umur_hari, tinggi_cm)
+    if suhu_C is not None:
+        hasil["suhu"] = analisis_suhu(umur_hari, suhu_C)
+    if lembap_pct is not None:
+        hasil["kelembapan"] = analisis_lembap(umur_hari, lembap_pct)
+    if daun is not None:
+        hasil["daun"] = analisis_daun(umur_hari, daun)
+    return hasil
+
+
+# CREATE
 def tambah_catatan(data):
     print("\n=== Tambah Catatan Pertumbuhan Jagung Ketan ===")
 
@@ -73,7 +142,7 @@ def tambah_catatan(data):
     tinggi = float(input("Tinggi (cm): "))
     suhu = float(input("Suhu lingkungan (°C): "))
     lembap = float(input("Kelembapan (%): "))
-    daun = input("Kondisi daun (hijau/kering/rusak): ")
+    daun = input("Kondisi daun (hijau/kering/rusak atau angka jumlah helai): ")
 
     catatan = {
         "tanggal": tanggal,
@@ -88,12 +157,24 @@ def tambah_catatan(data):
     save_data(data)
 
     print("\n=== Analisis Pertumbuhan ===")
-    print("Tinggi :", analisis_tinggi(umur, tinggi))
-    print("Suhu   :", analisis_suhu(suhu))
-    print("Lembap :", analisis_lembap(lembap))
-    print("Daun   :", analisis_daun(daun))
+    ringkasan = analisis_keseluruhan(
+        umur_hari=umur,
+        tinggi_cm=tinggi,
+        suhu_C=suhu,
+        lembap_pct=lembap,
+        daun=daun
+    )
 
+    if "error" in ringkasan:
+        print(ringkasan["error"])
+    else:
+        print(f"Minggu ke-{ringkasan['minggu']} (standar umur hari: {ringkasan['standar']['umur_days'][0]}–{ringkasan['standar']['umur_days'][1]})")
+        print("Tinggi :", ringkasan.get("tinggi", "-"))
+        print("Suhu   :", ringkasan.get("suhu", "-"))
+        print("Lembap :", ringkasan.get("kelembapan", "-"))
+        print("Daun   :", ringkasan.get("daun", "-"))
 
+# READ
 def lihat_data(data):
     if not data:
         print("Belum ada catatan.")
@@ -101,9 +182,7 @@ def lihat_data(data):
     
     tampilkan_tabel(data)
 
-# =====================
-# SEARCHING
-# =====================
+# SEARCH DATA (CARI DATA BERDASARKAN TANGGAL DAN UMUR TANAMAN)
 def search_data(data):
     if not data:
         print("Belum ada catatan.")
@@ -135,9 +214,8 @@ def search_data(data):
     else:
         print("Tidak ditemukan.")
 
-# =====================
-# SORTING
-# =====================
+
+# SORTING DATA BERDASARKAN 
 def sort_data(data):
     if not data:
         print("Belum ada catatan.")
@@ -175,9 +253,7 @@ def sort_data(data):
     tampilkan_tabel(data)
     save_data(data)
 
-# =====================
 # UPDATE
-# =====================
 def update_data(data):
     if not data:
         print("Belum ada catatan.")
@@ -215,9 +291,7 @@ def update_data(data):
     save_data(data)
     print("Catatan berhasil diperbarui!")
 
-# =====================
 # DELETE
-# =====================
 def delete_data(data):
     if not data:
         print("Belum ada catatan.")
@@ -243,9 +317,8 @@ def delete_data(data):
     else:
         print("Penghapusan dibatalkan.")
 
-# =====================
-# Utility tabel
-# =====================
+
+# MENAMMPILKAN TABEL MENGGUNAKAN TABULATE
 def tampilkan_tabel(records):
     tabel = [
         [i+1, d["tanggal"], d["umur"], d["tinggi"], d["suhu"], d["lembap"], d["daun"]]
@@ -258,9 +331,7 @@ def tampilkan_tabel(records):
         tablefmt="grid"
     ))
 
-# =====================
 # MENU UTAMA
-# =====================
 def main():
     data = load_data()
 
